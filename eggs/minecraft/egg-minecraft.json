@@ -1,0 +1,58 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-11-09T13:40:05-05:00",
+    "name": "Minecraft",
+    "author": "flureo@proton.me",
+    "description": null,
+    "features": [],
+    "docker_images": {
+        "Java 25": "ghcr.io\/ptero-eggs\/yolks:java_25",
+        "Java 22": "ghcr.io\/ptero-eggs\/yolks:java_22",
+        "Java 21": "ghcr.io\/ptero-eggs\/yolks:java_21",
+        "Java 17": "ghcr.io\/ptero-eggs\/yolks:java_17",
+        "Java 16": "ghcr.io\/ptero-eggs\/yolks:java_16",
+        "Java 11": "ghcr.io\/ptero-eggs\/yolks:java_11",
+        "Java 8": "ghcr.io\/ptero-eggs\/yolks:java_8"
+    },
+    "file_denylist": [],
+    "startup": "java -jar server.jar --nogui",
+    "config": {
+        "files": "{\r\n    \"server.properties\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"server-ip\": \"0.0.0.0\",\r\n            \"server-port\": \"{{server.build.default.port}}\",\r\n            \"query.port\": \"{{server.build.default.port}}\"\r\n        }\r\n    }\r\n}",
+        "startup": "{}",
+        "logs": "{\r\n    \"custom\": false,\r\n    \"location\": \"logs\/latest.log\"\r\n}",
+        "stop": "stop"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# Imange -- archlinux:latest\r\n\r\n# Define Variables\r\nlocal=\"\/mnt\/server\"\r\ntype=$TYPE\r\nversion=$VERSION\r\njava_version=\"25\"\r\nlink=\"null\"\r\n\r\nmkdir -p $local\r\ncd $local\r\n\r\n# Install Packages\r\npacman -Sy --noconfirm curl jq openjdk$java_version-src\r\n\r\nif [ $type = \"vanilla\" ]; then\r\n\tif [ $version = \"latest\" ]; then\r\n\t\tversion=`curl -s https:\/\/launchermeta.mojang.com\/mc\/game\/version_manifest.json | jq -r \".latest.release\"`\r\n\tfi\r\n\r\n\tlink=`curl -s https:\/\/launchermeta.mojang.com\/mc\/game\/version_manifest.json | jq --arg v $version -r '.versions | .[] | select(.id== $v) | .url'`\r\n\tlink=`curl -s $link | jq -r '.downloads.server.url'`\r\nelif [ $type = \"paper\" ] || [ $type = \"folia\" ]; then\r\n\tif [ $version = \"latest\" ]; then\r\n\t\tversion=`curl -s https:\/\/fill.papermc.io\/v3\/projects\/$type\/versions | jq -r '.versions[0].version.id'`\r\n\tfi\r\n\t\r\n\tlink=`curl -s https:\/\/fill.papermc.io\/v3\/projects\/$type\/versions\/$version\/builds\/latest | jq -r '.downloads.\"server:default\".url'`\r\nelif [ $type = \"fabric\" ]; then\r\n\tif [ $version = \"latest\" ]; then\r\n\t\tversion=`curl -s https:\/\/meta.fabricmc.net\/v2\/versions\/game | jq -r '.[] | select(.stable== true) | .version' | head -1`\r\n\tfi\r\n\t\r\n\tfabric_version=`curl -s https:\/\/meta.fabricmc.net\/v2\/versions\/installer | jq -r '.[0].version'`\r\n\tloader_version=`curl -s https:\/\/meta.fabricmc.net\/v2\/versions\/loader | jq -r '.[] | select(.stable== true) | .version' | head -1`\r\n\tlink=\"https:\/\/meta.fabricmc.net\/v2\/versions\/loader\/$version\/$loader_version\/$fabric_version\/server\/jar\"\r\nelif [ $type = \"forge\" ]; then\r\n\tif [ $version = \"latest\" ]; then\r\n\t\tversion=`curl -s https:\/\/files.minecraftforge.net\/net\/minecraftforge\/forge\/promotions_slim.json | jq -r '.promos | to_entries[] | .key | split(\"-\")[0]' | tail -1`\r\n\tfi\r\n\t\r\n\tforge_version=`curl -s https:\/\/files.minecraftforge.net\/net\/minecraftforge\/forge\/promotions_slim.json | jq --arg v $version-latest -r '.promos | .[$v]'`\r\n\trm -f server.jar\r\n\tcurl -s https:\/\/maven.minecraftforge.net\/net\/minecraftforge\/forge\/$version-$forge_version\/forge-$version-$forge_version-installer.jar -o installer.jar\r\n\tjava -jar installer.jar --installServer\r\n\trm -f installer.jar installer.jar.log README.txt run.* user_jvm_args.txt\r\n\tmv forge-*.jar server.jar\r\nelse\r\n\techo -e \"Invalid sever type.\"\r\n\texit\r\nfi\r\n\r\nif [ \"$link\" = \"null\" ] && [ $type != \"forge\" ] ; then\r\n\techo -e \"Invalid download link.\"\r\n\texit\r\nfi\r\n\r\n# Download server.jar\r\nif [ $type != \"forge\" ]; then\r\n\trm -f server.jar\r\n\tcurl -s $link -o server.jar\r\nfi\r\n\r\n# Accept EULA\r\necho eula=true >> eula.txt",
+            "container": "docker.io\/archlinux\/archlinux:latest",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "version",
+            "description": "",
+            "env_variable": "VERSION",
+            "default_value": "latest",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|between:3,15",
+            "field_type": "text"
+        },
+        {
+            "name": "type",
+            "description": "",
+            "env_variable": "TYPE",
+            "default_value": "vanilla",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        }
+    ]
+}
